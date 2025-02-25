@@ -1,0 +1,18 @@
+event handling for correct sync of status
+progress bar and stop button on downloading - progress bar based on fragment (TA 00:00 (frag 1216/1217)) for videos
+and based on index of total for playlists
+do not install playlist on video selection and vice versa
+test if creating playlist named folder
+eliminate status state
+properly set logs
+test
+apparently it works for any kind of video with yt-dlp: change name
+create update logic to check for releases on github and popup if so to reinstall
+locale and detect, also bar up
+playlist download to folder named by playlist title
+hide cmd runs ?? so everything runs in the background
+
+build windows
+build mac
+
+modify check ffmpeg to run at startup instead
