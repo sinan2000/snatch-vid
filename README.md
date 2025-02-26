@@ -1,59 +1,76 @@
-SnatchVid - Video & Playlist Downloader
+<p align="center">
+  <img src="assets/sns-automation-logo.svg" alt="SNS Automation" width="200">
+</p>
 
-SnatchVid is a fast and efficient video and playlist downloader developed by SNS Automation. This cross-platform app is built with Tauri, React, and TypeScript, providing a lightweight yet powerful solution for downloading videos from YouTube.
+# 🚀 SnatchVid - Video & Playlist Downloader  
 
-🚀 Currently in Beta: This app is in development mode, and we are continuously improving features and fixing bugs.
+**SnatchVid** is a fast and efficient video and playlist downloader developed by **SNS Automation**.  
+This cross-platform app is built with **Tauri, React, and TypeScript**, providing a lightweight yet powerful solution for downloading videos from YouTube and other platforms.
 
-🔗 Visit Us: www.snsautomation.tech
+🔗 **Visit Us:** [www.snsautomation.tech](https://www.snsautomation.tech)
 
-Features
-✅ Download single videos or full playlists
-✅ Support for multiple formats (MP4, MP3, WAV, AAC, FLAC)
-✅ Choose video quality (4K, 1080p, 720p, etc.)
-✅ Set a custom download folder
-✅ Real-time progress tracking
-✅ Lightweight and optimized for speed with Tauri
+---
 
-Tech Stack
-Frontend: React + TypeScript + Vite
-Backend: Rust (Tauri)
-Download Engine: yt-dlp for high-speed, reliable downloads
-Installation & Setup
-1. Prerequisites
-Node.js (LTS version recommended)
-Rust & Cargo
-Tauri CLI
-2. Clone the Repository
-sh
-Copy
-Edit
-git clone https://github.com/sinan2000/SnatchVid-downloader.git
-cd SnatchVid-downloader
-3. Install Dependencies
-sh
-Copy
-Edit
+## 🌟 Features  
+
+- 🎥 **Download Single Videos & Playlists** – Grab videos or entire playlists effortlessly  
+- 📽️ **Multiple Formats** – MP4, MP3, WAV, AAC, FLAC  
+- 🎚️ **Quality Selection** – Choose from 4K, 1080p, 720p, and more  
+- 📂 **Custom Download Folder** – Save files exactly where you want  
+- ⏳ **Real-time Progress Tracking** – Monitor your downloads in real-time  
+- ⚡ **Lightweight & Fast** – Optimized with **Tauri** for speed and efficiency  
+
+---
+
+## 🛠️ Tech Stack  
+
+- **Frontend:** React + TypeScript + Vite  
+- **Backend:** Rust (Tauri)  
+- **Download Engine:** yt-dlp for high-speed, reliable downloads  
+
+---
+
+## 🚀 Installation & Setup  
+
+### 1️. Prerequisites  
+Ensure you have the following installed:  
+
+- [Node.js (LTS version)](https://nodejs.org/)  
+- [Rust & Cargo](https://www.rust-lang.org/)  
+- [Tauri CLI](https://tauri.app/)  
+
+### 2️. Clone the Repository  
+```sh
+git clone https://github.com/sinan2000/snatch-vid.git
+```
+
+### 3. Install Dependencies
+```sh
+cd snatch-vid
 npm install
-4. Run in Development Mode
-sh
-Copy
-Edit
-npm run tauri dev
-5. Build for Production
-sh
-Copy
-Edit
-npm run tauri build
-Usage
-Enter the video or playlist URL
-Choose format & quality
-Set the download folder (optional)
-Click "Download" and track progress
-Contributing & Feedback
-This project is currently in beta.
-If you encounter any issues or have feature requests, please contact us via our website:
-🌐 www.snsautomation.tech
+```
 
-License
-📜 MIT License - Feel free to modify and use it as needed.
+### 4. Run in Development Mode
+```sh
+npm run tauri dev
+```
+
+### 5. Build for Production
+Ensure to only include needed resources for your target OS build from src-tauri/tauri.conf.json.
+```sh
+npm run tauri build
+```
+
+## 📖 Usage
+
+- 1. Enter the video or playlist URL
+- 2. Choose format & quality
+- 3. Set the download folder (optional)
+- 4. Click "Download" and track progress
+
+## 🤝 Contributing & Feedback
+If you encounter any issues or have feature requests, feel free to contact us via our website: [SNS Automation](https://www.snsautomation.tech)
+
+## 📜 License
+MIT License – Feel free to modify and use SnatchVid as needed.
 
