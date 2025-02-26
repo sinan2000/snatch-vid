@@ -1,12 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import "./App.css"
 import { invoke } from "@tauri-apps/api/core";
 import { Logo } from "./components/logo"
 import { Settings, HelpCircle } from "lucide-react"
 import SelectFolder from "./components/select-folder";
 
-function App() {
+const initialState = {
+  url: "",
+  format: "mp4",
+  quality: "4k",
+};
+
+function reducer(state: any, action: any) {
+  return { ...state, [action.name]: action.value };
+}
+
+export default function App() {
   const [visible, setVisible] = useState<boolean>(false);
+  const [formState, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     async function checkConfig() {
@@ -21,6 +32,10 @@ function App() {
     }
     checkConfig();
   }, []);
+
+  function handleDownload() {
+    console.log(formState);
+  }
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white">
@@ -63,9 +78,69 @@ function App() {
 
         {/* Divider */}
         <div className="w-full my-4 border-t border-gray-600"></div>
+
+        {/* URL Input */}
+        <input
+          type="text"
+          placeholder="Enter URL..."
+          name="url"
+          value={formState.url}
+          onChange={(e) => dispatch(e.target)}
+          className="w-full p-2 mt-2 border border-gray-600 rounded"
+        />
+
+        {/* Format Selection */}
+        <div className="mt-4">
+          <h2 className="text-lg font-semibold">Select Format:</h2>
+          <div className="flex gap-4 mt-2">
+            {["mp4", "mp3", "wav", "aac", "flac"].map((f) => (
+              <label key={f} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="format"
+                  value={f}
+                  checked={formState.format === f}
+                  onChange={(e) => dispatch(e.target)}
+                  className="accent-emerald-500"
+                />
+                {f.toUpperCase()}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Quality Selection (Only for MP4) */}
+        {formState.format === "mp4" && (
+          <div className="mt-4">
+            <h2 className="text-lg font-semibold">Select Quality:</h2>
+            <p className="text-xs mt-1 mb-2">
+              If the requested quality is not available, the next best quality will be downloaded.
+            </p>
+
+            <div className="flex flex-wrap gap-4">
+              {["4k", "1440p", "1080p", "720p", "480p", "360p", "240p", "144p"].map((q) => (
+                <label key={q} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="quality"
+                    value={q}
+                    checked={formState.quality === q}
+                    onChange={(e) => dispatch(e.target)}
+                    className="accent-emerald-500"
+                  />
+                  {q.toUpperCase()}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Download Button */}
+        <button onClick={handleDownload} className="w-full py-2 mt-4 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition">
+          Download
+        </button>
+
       </div>
     </main>
   )
 }
-
-export default App

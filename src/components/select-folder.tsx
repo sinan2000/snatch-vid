@@ -7,7 +7,7 @@ interface SelectFolderProps {
   setVisible: (value: boolean) => void;
 }
 
-function SelectFolder({ visible, setVisible }: SelectFolderProps) {
+export default function SelectFolder({ visible, setVisible }: SelectFolderProps) {
   const [path, setPath] = useState<string | null>(null);
 
   useEffect(() => {
