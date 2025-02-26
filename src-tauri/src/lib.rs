@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use tauri::command;
 use tokio::task;
 
@@ -148,7 +148,7 @@ fn get_playlist_title(yt_dlp_path: &str, url: &str) -> Result<String, String> {
 }
 
 // Creates a new directory at the given path
-fn create_folder(base_dir: &str, title: &str) -> bool {
+fn create_folder(base_dir: &str, title: &str) -> Option<String> {
     let mut folder_path = PathBuf::from(base_dir);
     folder_path.push(title);
 
@@ -159,29 +159,33 @@ fn create_folder(base_dir: &str, title: &str) -> bool {
         count += 1;
     }
 
-    fs::create_dir_all(&folder_path).is_ok()
+    if fs::create_dir_all(&folder_path).is_ok() {
+        return Some(folder_path.file_name()?.to_string_lossy().to_string());
+    }
+
+    None
 }
 
 // Creates a new folder where the playlist will be downloaded
 #[command]
-async fn setup_playlist_folder(url: String) -> bool {
+async fn setup_playlist_folder(url: String) -> Option<String> {
     let result = task::spawn_blocking(move || {
         let (yt_dlp_path, _) = get_binary_paths();
 
         let base_dir = match read_config() {
             Some(dir) => dir,
-            None => return false,
+            None => return None,
         };
 
         let title = match get_playlist_title(&yt_dlp_path, &url) {
             Ok(t) => t,
-            Err(_) => return false,
+            Err(_) => return None,
         };
 
         create_folder(&base_dir, &title)
     })
     .await
-    .unwrap_or(false);
+    .unwrap_or(None);
 
     result
 }
@@ -192,41 +196,50 @@ fn generate_args(
     quality: &str,
     download_type: &str,
     ffmpeg_path: &str,
+    download_path: &str,
 ) -> Vec<String> {
     let mut args = vec![
         "--verbose".to_string(),
-        format!("--ffmpeg-location {}", ffmpeg_path),
+        "--ffmpeg-location".to_string(),
+        ffmpeg_path.to_string(),
+        "-P".to_string(),
+        download_path.to_string(),
     ];
 
     match format {
         "mp4" => {
             args.push(format!(
-                "-f \"bestvideo[height={}]+bestaudio[ext=m4a]\"",
+                "-f bestvideo[height={}]+bestaudio[ext=m4a]",
                 quality
             ));
-            args.push("--merge-output-format mp4".to_string());
+            args.push("--merge-output-format".to_string());
+            args.push("mp4".to_string());
         }
         "webm" => {
             args.push(format!(
-                "-f \"bestvideo[height={}][ext=webm]+bestaudio[ext=webm]\"",
+                "-f bestvideo[height={}][ext=webm]+bestaudio[ext=webm]",
                 quality
             ));
-            args.push("--merge-output-format webm".to_string());
+            args.push("--merge-output-format".to_string());
+            args.push("webm".to_string());
         }
         "mp3" => {
-            args.push("-f \"bestaudio\"".to_string());
+            args.push("-f bestaudio".to_string());
             args.push("--extract-audio".to_string());
-            args.push("--audio-format mp3".to_string());
+            args.push("--audio-format".to_string());
+            args.push("mp3".to_string());
         }
         "m4a" => {
-            args.push("-f \"bestaudio[ext=m4a]\"".to_string());
+            args.push("-f bestaudio[ext=m4a]".to_string());
             args.push("--extract-audio".to_string());
-            args.push("--audio-format m4a".to_string());
+            args.push("--audio-format".to_string());
+            args.push("m4a".to_string());
         }
         "wav" => {
-            args.push("-f \"bestaudio\"".to_string());
+            args.push("-f bestaudio".to_string());
             args.push("--extract-audio".to_string());
-            args.push("--audio-format wav".to_string());
+            args.push("--audio-format".to_string());
+            args.push("wav".to_string());
         }
         _ => {
             eprintln!("Invalid format provided: {}", format);
@@ -253,62 +266,55 @@ async fn start_download(
     format: String,
     quality: String,
     download_type: String,
+    playlist_folder: String,
 ) -> bool {
     let (yt_dlp_path, ffmpeg_path) = get_binary_paths();
 
-    let args = generate_args(&format, &quality, &download_type, &ffmpeg_path);
+    let download_path = match read_config() {
+        Some(path) => PathBuf::from(path),
+        None => {
+            eprintln!("Download path not found in config.");
+            return false;
+        }
+    };
 
-    let result = task::spawn_blocking(move || download_video(&yt_dlp_path, &url, args))
+    let final_download_path = if download_type == "playlist" {
+        download_path.join(&playlist_folder)
+    } else {
+        download_path
+    };
+
+    let path_str = final_download_path.to_string_lossy().to_string();
+
+    let args = generate_args(
+        &format,
+        &quality,
+        &download_type,
+        &ffmpeg_path,
+        &path_str,
+    );
+
+    let result = task::spawn_blocking(move || download_process(&yt_dlp_path, &url, args))
         .await
         .unwrap_or(false);
 
     result
 }
 
-fn download_video(yt_dlp_path: &str, url: &str, args: Vec<String>) -> bool {
-    let output = Command::new(yt_dlp_path).arg(url).args(&args).output();
-
-    match output {
-        Ok(result) => result.status.success(),
-        Err(_) => false,
-    }
-}
-
-fn download_playlist(yt_dlp_path: &str, url: &str, args: Vec<String>) -> bool {
-    let base_dir = match read_config() {
-        Some(dir) => dir,
-        None => return false,
-    };
-
-    let title = match get_playlist_title(&yt_dlp_path, &url) {
-        Ok(t) => t,
-        Err(_) => return false,
-    };
-
-    let mut folder_path = PathBuf::from(&base_dir).join(&title);
-    let mut counter = 2;
-    while folder_path.exists() {
-        folder_path = PathBuf::from(&base_dir).join(format!("{}_{}", title, counter));
-        counter += 1;
-    }
-
-    if fs::create_dir_all(&folder_path).is_err() {
-        return false;
-    }
-
-    let mut modified_args = args.clone();
-    modified_args.push("-P".to_string());
-    modified_args.push(folder_path.to_string_lossy().to_string());
-
-    // Run yt-dlp
-    let output = Command::new(yt_dlp_path)
+fn download_process(yt_dlp_path: &str, url: &str, args: Vec<String>) -> bool {
+    let status = Command::new(yt_dlp_path)
         .arg(url)
-        .args(modified_args)
-        .output();
+        .args(&args)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status();
 
-    match output {
-        Ok(result) => result.status.success(),
-        Err(_) => false,
+    match status {
+        Ok(status) => status.success(),
+        Err(e) => {
+            eprintln!("Failed to execute yt-dlp: {}", e);
+            false
+        }
     }
 }
 
