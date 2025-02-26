@@ -7,7 +7,7 @@ interface LoadingModalProps {
   progress: number
 }
 
-export function LoadingModal({ text, phase, onClose, progress }: LoadingModalProps) {
+export default function LoadingModal({ text, phase, onClose, progress }: LoadingModalProps) {
   const finished = phase === 3 || phase === 4
   if (phase === 0) return null
 
@@ -21,7 +21,7 @@ export function LoadingModal({ text, phase, onClose, progress }: LoadingModalPro
           <CheckCircle className="w-12 h-12 text-emerald-500 animate-bounce" />
         )}
 
-        <p className="text-white text-lg mt-4 mb-2 dots">
+        <p className={`text-white text-lg mt-4 mb-2 ${!finished ? 'dots' : ''}`}>
           {text}
         </p>
 

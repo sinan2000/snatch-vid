@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Logo } from "./components/logo"
 import { Settings, HelpCircle } from "lucide-react"
 import SelectFolder from "./components/select-folder";
-import { LoadingModal } from "./components/loading";
+import LoadingModal from "./components/loading";
 
 const form_initialState = {
   url: "",
