@@ -101,7 +101,10 @@ async fn detect_url_type(url: String) -> String {
         if let Some(ref t) = parsed.entry_type {
             if t == "playlist" {
                 if parsed.playlist_count.unwrap_or(1) == 0
-                    || parsed.entries.as_ref().map_or(false, |entries| entries.is_empty())
+                    || parsed
+                        .entries
+                        .as_ref()
+                        .map_or(false, |entries| entries.is_empty())
                 {
                     return Some("none".to_string());
                 }
@@ -119,6 +122,69 @@ async fn detect_url_type(url: String) -> String {
     .unwrap_or_else(|| "none".to_string())
 }
 
+// Fetches the playlist title of the given URL
+fn get_playlist_title(yt_dlp_path: &str, url: &str) -> Result<String, String> {
+    let output = Command::new(yt_dlp_path)
+        .args(&["--print", "%(playlist_title)s"]) // Removed --flat-playlist
+        .arg(url)
+        .output()
+        .map_err(|e| format!("Failed to execute yt-dlp: {}", e))?;
+
+    if !output.status.success() {
+        return Err("yt-dlp failed to fetch playlist title.".to_string());
+    }
+
+    let title = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .next()
+        .unwrap_or("")
+        .trim()
+        .replace("\n", "_");
+
+    if title.is_empty() {
+        return Err("Playlist title is empty. Check URL.".to_string());
+    }
+    Ok(title)
+}
+
+// Creates a new directory at the given path
+fn create_folder(base_dir: &str, title: &str) -> bool {
+    let mut folder_path = PathBuf::from(base_dir);
+    folder_path.push(title);
+
+    let mut count = 2;
+    while folder_path.exists() {
+        folder_path = PathBuf::from(base_dir);
+        folder_path.push(format!("{} ({})", title, count));
+        count += 1;
+    }
+
+    fs::create_dir_all(&folder_path).is_ok()
+}
+
+// Creates a new folder where the playlist will be downloaded
+#[command]
+async fn setup_playlist_folder(url: String) -> bool {
+    let result = task::spawn_blocking(move || {
+        let (yt_dlp_path, _) = get_binary_paths();
+
+        let base_dir = match read_config() {
+            Some(dir) => dir,
+            None => return false,
+        };
+
+        let title = match get_playlist_title(&yt_dlp_path, &url) {
+            Ok(t) => t,
+            Err(_) => return false,
+        };
+
+        create_folder(&base_dir, &title)
+    })
+    .await
+    .unwrap_or(false);
+
+    result
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -129,7 +195,8 @@ pub fn run() {
             config_exists,
             create_config,
             read_config,
-            detect_url_type
+            detect_url_type,
+            setup_playlist_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

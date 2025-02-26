@@ -33,7 +33,6 @@ export default function App() {
   const [loadingState, dispatchLoading] = useReducer(reducer, loading_initialState);
 
   const isLoading = loadingState.phase !== 0;
-  const displayText = loading_initialState.text[loadingState.phase - 1];
 
   useEffect(() => {
     async function checkConfig() {
@@ -64,9 +63,11 @@ export default function App() {
       if (type === "none") {
         alert("No video or playlist found! Please check the URL and try again.");
         return;
+      } else if (type === "playlist") {
+        await invoke("setup_playlist_folder", { url: formState.url });
       }
 
-
+      dispatchLoading({ name: 'phase', value: 2 });
 
     } catch (error) {
       console.error(error);
@@ -76,8 +77,16 @@ export default function App() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white">
       <div className="w-full p-5">
-        <SelectFolder visible={buttonsState.settings} setVisible={(value: boolean) => dispatchButtons({ name: 'settings', value })} />
-        <LoadingModal text={displayText} phase={0} onClose={(value: number) => dispatchLoading({ name: 'phase', value })} progress={0} />
+        <SelectFolder
+          visible={buttonsState.settings}
+          setVisible={(value: boolean) => dispatchButtons({ name: 'settings', value })}
+        />
+        <LoadingModal
+          text={loading_initialState.text[loadingState.phase - 1]}
+          phase={loading_initialState.phase}
+          onClose={(value: number) => dispatchLoading({ name: 'phase', value })}
+          progress={loading_initialState.progress}
+        />
 
         {/* Top Section */}
         <div className="flex justify-between items-center">
