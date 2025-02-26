@@ -1,4 +1,5 @@
-on app setup before installing or at first run, ask for default download folder; at each run, check if it exists, otherwise prompt again
+- move visible logic to app.tsx and also put a header for that
+
 hide cmd runs ?? so everything runs in the background
 event handling for correct sync of status
 progress bar and stop button on downloading - progress bar based on fragment (TA 00:00 (frag 1216/1217)) for videos

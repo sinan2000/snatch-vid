@@ -1,4 +1,4 @@
-import { cn } from "./util/cn";
+import { cn } from "../utils/cn";
 
 export function Logo({ className }: { className?: string }) {
   return (
