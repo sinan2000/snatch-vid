@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    sns_youtube_download_lib::run()
+    snatch_vid_lib::run()
 }

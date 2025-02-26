@@ -1,4 +1,5 @@
 on app setup before installing or at first run, ask for default download folder; at each run, check if it exists, otherwise prompt again
+hide cmd runs ?? so everything runs in the background
 event handling for correct sync of status
 progress bar and stop button on downloading - progress bar based on fragment (TA 00:00 (frag 1216/1217)) for videos
 and based on index of total for playlists
@@ -11,7 +12,7 @@ apparently it works for any kind of video with yt-dlp: change name
 create update logic to check for releases on github and popup if so to reinstall
 locale and detect, also bar up
 playlist download to folder named by playlist title
-hide cmd runs ?? so everything runs in the background
+how to button representing 2/3 slides with photo and explanation
 
 build windows
 build mac

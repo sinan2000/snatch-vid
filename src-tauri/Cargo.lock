@@ -3554,9 +3554,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcf8323ef1faaee30a44a340193b1ac6814fd9b7b4e88e9d4519a3e4abe1cfd"
 
 [[package]]
-name = "sns-youtube-download"
-version = "0.1.0"
+name = "snatchvid"
+version = "1.0.0"
 dependencies = [
+ "dirs 6.0.0",
  "serde",
  "serde_json",
  "tauri",

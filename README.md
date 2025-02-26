@@ -63,10 +63,10 @@ npm run tauri build
 
 ## 📖 Usage
 
-- 1. Enter the video or playlist URL
-- 2. Choose format & quality
-- 3. Set the download folder (optional)
-- 4. Click "Download" and track progress
+1. Enter the video or playlist URL
+2. Choose format & quality
+3. Set the download folder (optional)
+4. Click "Download" and track progress
 
 ## 🤝 Contributing & Feedback
 If you encounter any issues or have feature requests, feel free to contact us via our website: [SNS Automation](https://www.snsautomation.tech)
