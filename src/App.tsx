@@ -33,6 +33,7 @@ export default function App() {
   const [loadingState, dispatchLoading] = useReducer(reducer, loading_initialState);
 
   const isLoading = loadingState.phase !== 0;
+  const displayText = loading_initialState.text[loadingState.phase - 1];
 
   useEffect(() => {
     async function checkConfig() {
@@ -76,7 +77,7 @@ export default function App() {
     <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white">
       <div className="w-full p-5">
         <SelectFolder visible={buttonsState.settings} setVisible={(value: boolean) => dispatchButtons({ name: 'settings', value })} />
-        <LoadingModal text="Text" phase={0} onClose={(value: number) => dispatchLoading({ name: 'phase', value })} progress={0} />
+        <LoadingModal text={displayText} phase={0} onClose={(value: number) => dispatchLoading({ name: 'phase', value })} progress={0} />
 
         {/* Top Section */}
         <div className="flex justify-between items-center">
