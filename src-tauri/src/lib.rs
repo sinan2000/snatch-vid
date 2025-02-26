@@ -1,9 +1,10 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 use tauri::command;
+use tokio::task;
 
 // Struct for storing the file path
 #[derive(Serialize, Deserialize, Debug)]
@@ -71,47 +72,58 @@ fn get_binary_paths() -> (String, String) {
     (yt_dlp_bin.to_string(), ffmpeg_bin.to_string())
 }
 
-// Struct to parse the JSON output from `yt-dlp`
 #[derive(Debug, Deserialize)]
 struct YtDlpJSON {
     #[serde(rename = "_type")]
     entry_type: Option<String>,
+    entries: Option<Vec<serde_json::Value>>,
 }
 
-// Command to detect if URL is video, playlist or None
 #[command]
-fn detect_url_type(url: String) -> String {
+async fn detect_url_type(url: String) -> String {
     let (yt_dlp_bin, _) = get_binary_paths();
 
-    let output = Command::new(yt_dlp_bin)
-        .arg("--dump-json")
-        .arg("--no-warnings")
-        .arg("--flat-playlist")
-        .arg(url)
-        .output();
+    let result = task::spawn_blocking(move || {
+        let output = Command::new(yt_dlp_bin)
+            .arg("--dump-json")
+            .arg("--no-warnings")
+            .arg(url)
+            .output();
 
-    match output {
-        Ok(result) => {
-            if result.status.success() {
-                let json_output = String::from_utf8_lossy(&result.stdout);
-                
-                match serde_json::from_str::<YtDlpJSON>(&json_output) {
-                    Ok(parsed) => {
-                        if let Some(entry_type) = parsed.entry_type {
-                            if entry_type == "playlist" {
-                                return "playlist".to_string();
+        match output {
+            Ok(result) => {
+                if result.status.success() {
+                    let json_output = String::from_utf8_lossy(&result.stdout);
+                    match serde_json::from_str::<YtDlpJSON>(&json_output) {
+                        Ok(parsed) => {
+                            // Check if _type indicates a playlist
+                            if let Some(ref t) = parsed.entry_type {
+                                if t == "playlist" {
+                                    return "playlist".to_string();
+                                }
                             }
+                            // If entries exist and are non-empty, treat it as a playlist
+                            if let Some(entries) = parsed.entries {
+                                if !entries.is_empty() {
+                                    return "playlist".to_string();
+                                }
+                            }
+                            // Otherwise, it's a single video
+                            "video".to_string()
                         }
-                        return "video".to_string();
+                        Err(_) => "video".to_string(), // Fallback to video if JSON parsing fails
                     }
-                    Err(_) => return "video".to_string(), // video by default
+                } else {
+                    "none".to_string() // Command executed but returned an error
                 }
             }
+            Err(_) => "none".to_string(), // Error executing command
         }
-        Err(_) => return "none".to_string(), // error
-    }
+    })
+    .await
+    .unwrap_or_else(|_| "none".to_string());
 
-    "none".to_string() // fallback
+    result
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -119,7 +131,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![config_exists, create_config, read_config, detect_url_type])
+        .invoke_handler(tauri::generate_handler![
+            config_exists,
+            create_config,
+            read_config,
+            detect_url_type
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

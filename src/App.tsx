@@ -41,9 +41,13 @@ export default function App() {
       return;
     }
 
-    const type = await invoke<string>("detect_url_type", { url: formState.url });
+    try {
+      const type = await invoke<string>("detect_url_type", { url: formState.url });
 
-    console.log("Downloading:", type);
+      console.log("Downloading:", type);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
