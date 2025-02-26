@@ -1,31 +1,45 @@
-import { useState, useEffect, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import "./App.css"
 import { invoke } from "@tauri-apps/api/core";
 import { Logo } from "./components/logo"
 import { Settings, HelpCircle } from "lucide-react"
 import SelectFolder from "./components/select-folder";
+import { LoadingModal } from "./components/loading";
 
-const initialState = {
+const form_initialState = {
   url: "",
   format: "mp4",
   quality: "4k",
 };
+
+const buttons_initialState = {
+  settings: false, // makes the settings panel visible
+  help: false, // makes the help panel visible
+}
+
+const loading_initialState = {
+  phase: 0, // 0: not started, 1. getting url type, 2. downloading, 3. finished, -1 error
+  progress: 0,
+  text: ["Detecting URL type", "Downloading...", "Finished", "Error"],
+}
 
 function reducer(state: any, action: any) {
   return { ...state, [action.name]: action.value };
 }
 
 export default function App() {
-  const [visible, setVisible] = useState<boolean>(false);
-  const [formState, dispatch] = useReducer(reducer, initialState);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [formState, dispatchForm] = useReducer(reducer, form_initialState);
+  const [buttonsState, dispatchButtons] = useReducer(reducer, buttons_initialState);
+  const [loadingState, dispatchLoading] = useReducer(reducer, loading_initialState);
+
+  const isLoading = loadingState.phase !== 0;
 
   useEffect(() => {
     async function checkConfig() {
       try {
         const exists = await invoke<boolean>("config_exists");
         if (!exists) {
-          setVisible(true);
+          dispatchButtons({ name: 'settings', value: true })
         }
       } catch (error) {
         console.error(error);
@@ -35,7 +49,7 @@ export default function App() {
   }, []);
 
   async function handleDownload() {
-    setLoading(true);
+    dispatchLoading({ name: 'phase', value: 1 });
     const validUrlRegex = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/;
 
     if (!validUrlRegex.test(formState.url)) {
@@ -46,18 +60,23 @@ export default function App() {
     try {
       const type = await invoke<string>("detect_url_type", { url: formState.url });
 
-      console.log("Downloading:", type);
+      if (type === "none") {
+        alert("No video or playlist found! Please check the URL and try again.");
+        return;
+      }
+
+
+
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   }
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white">
       <div className="w-full p-5">
-        <SelectFolder visible={visible} setVisible={setVisible} />
+        <SelectFolder visible={buttonsState.settings} setVisible={(value: boolean) => dispatchButtons({ name: 'settings', value })} />
+        <LoadingModal text="Text" phase={0} onClose={(value: number) => dispatchLoading({ name: 'phase', value })} progress={0} />
 
         {/* Top Section */}
         <div className="flex justify-between items-center">
@@ -69,7 +88,7 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <button className="text-gray-400 hover:text-white transition-colors">
-                <Settings size={20} onClick={() => setVisible(true)} />
+                <Settings size={20} onClick={() => dispatchButtons({ name: 'settings', value: true })} />
               </button>
               <button className="text-gray-400 hover:text-white transition-colors">
                 <HelpCircle size={20} />
@@ -102,7 +121,7 @@ export default function App() {
           placeholder="Enter URL..."
           name="url"
           value={formState.url}
-          onChange={(e) => dispatch(e.target)}
+          onChange={(e) => dispatchForm(e.target)}
           className="w-full p-2 mt-2 border border-gray-600 rounded"
         />
 
@@ -117,7 +136,7 @@ export default function App() {
                   name="format"
                   value={f}
                   checked={formState.format === f}
-                  onChange={(e) => dispatch(e.target)}
+                  onChange={(e) => dispatchForm(e.target)}
                   className="accent-emerald-500"
                 />
                 {f.toUpperCase()}
@@ -142,7 +161,7 @@ export default function App() {
                     name="quality"
                     value={q}
                     checked={formState.quality === q}
-                    onChange={(e) => dispatch(e.target)}
+                    onChange={(e) => dispatchForm(e.target)}
                     className="accent-emerald-500"
                   />
                   {q.toUpperCase()}
@@ -153,9 +172,9 @@ export default function App() {
         )}
 
         {/* Download Button */}
-        <button onClick={handleDownload} disabled={loading} className={`w-full py-2 mt-4 text-white rounded transition ${loading
-            ? "bg-gray-500 cursor-not-allowed"
-            : "bg-emerald-600 hover:bg-emerald-500"
+        <button onClick={handleDownload} disabled={isLoading} className={`w-full py-2 mt-4 text-white rounded transition ${isLoading
+          ? "bg-gray-500 cursor-not-allowed"
+          : "bg-emerald-600 hover:bg-emerald-500"
           }`}>
           Download
         </button>
