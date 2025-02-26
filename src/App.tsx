@@ -1,24 +1,8 @@
-import { useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import "./App.css";
+import SelectFolder from "./components/select-folder";
 
 function App() {
-  async function getDownloadPath() {
-    const path = await invoke<string>("get_download_directory");
-    console.log("Download Path:", path);
-  }
-
-  async function getBinaryPaths() {
-    const [ytDlp, ffmpeg] = await invoke<[string, string]>("get_binaries");
-    console.log("yt-dlp:", ytDlp);
-    console.log("ffmpeg:", ffmpeg);
-  }  
-
-  useEffect(() => {
-    getDownloadPath();
-    getBinaryPaths();
-  }, []);
-
-  return <p>Hello world!</p>
+  return <SelectFolder isOpen={true} onClose={() => {}} onConfirm={() => {}} />
 }
 
 export default App;
