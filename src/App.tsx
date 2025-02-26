@@ -6,7 +6,7 @@ import { Settings, HelpCircle } from "lucide-react"
 import SelectFolder from "./components/select-folder";
 import LoadingModal from "./components/loading";
 import { listen } from "@tauri-apps/api/event";
-import { parseDownloadPercentage } from "./utils/helpers";
+import { parseDownloadingItem, parseDownloadPercentage } from "./utils/helpers";
 
 const form_initialState = {
   url: "",
@@ -23,6 +23,8 @@ const loading_initialState = {
   phase: 0, // 0: not started, 1. getting url type, 2. downloading, 3. finished, 4 error
   progress: 0,
   text: ["", "Preparing download", "Downloading", "Finished", "Error"],
+  currentItem: 1,
+  totalItems: 1,
 }
 
 const qualityMap = {
@@ -63,10 +65,21 @@ export default function App() {
 
   useEffect(() => {
     const unlisten = listen("progress", event => {
-      console.log("Progress log: ", event.payload);
-      const percent = parseDownloadPercentage(event.payload as string);
-      if (percent) {
-        dispatchLoading({ name: 'progress', value: percent });
+      const logLine = event.payload as string;
+
+      // If this line indicates a new video is starting:
+      const itemInfo = parseDownloadingItem(logLine);
+      if (itemInfo) {
+        loadingState.currentItem = itemInfo.current;
+        loadingState.totalItems = itemInfo.total;
+      }
+
+      // Get the local percentage for the current video:
+      const localPercent = parseDownloadPercentage(logLine);
+      if (localPercent !== null) {
+        // Calculate overall progress across the playlist:
+        const overallProgress = (((loadingState.currentItem - 1) + (localPercent / 100)) / loadingState.totalItems) * 100;
+        dispatchLoading({ name: 'progress', value: Math.round(overallProgress) });
       }
     });
 
@@ -74,6 +87,13 @@ export default function App() {
       unlisten.then(f => f());
     }
   }, []);
+
+  function resetLoadingReducer() {
+    dispatchLoading({ name: 'phase', value: 0 });
+    dispatchLoading({ name: 'progress', value: 0 });
+    dispatchLoading({ name: 'currentItem', value: 1 });
+    dispatchLoading({ name: 'totalItems', value: 1 });
+  }
 
   async function handleDownload() {
     dispatchLoading({ name: 'phase', value: 1 });
@@ -122,7 +142,7 @@ export default function App() {
         <LoadingModal
           text={loadingState.text[loadingState.phase]}
           phase={loadingState.phase}
-          onClose={(value: number) => dispatchLoading({ name: 'phase', value })}
+          onClose={resetLoadingReducer}
           progress={loadingState.progress}
         />
 

@@ -3,7 +3,7 @@ import { Loader2, CheckCircle } from 'lucide-react'
 interface LoadingModalProps {
   text: string
   phase: number
-  onClose: (value: number) => void
+  onClose: () => void
   progress: number
 }
 
@@ -42,7 +42,7 @@ export default function LoadingModal({ text, phase, onClose, progress }: Loading
             {/* Percentage Indicator Inside */}
             <span
               className="absolute inset-0 flex justify-center items-center text-sm font-semibold transition-colors"
-              style={{ color: progress > 50 ? "#1E1E1E" : "#FFFFFF" }} 
+              style={{ color: "#FFFFFF" }} 
             >
               {progress}%
             </span>
@@ -55,7 +55,7 @@ export default function LoadingModal({ text, phase, onClose, progress }: Loading
 
             <button
               className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition"
-              onClick={() => onClose(0)}
+              onClick={() => onClose()}
             >
               Close
             </button>
