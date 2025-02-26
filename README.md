@@ -1,6 +1,6 @@
-Speedyt - Video & Playlist Downloader
+SnatchVid - Video & Playlist Downloader
 
-Speedyt is a fast and efficient video and playlist downloader developed by SNS Automation. This cross-platform app is built with Tauri, React, and TypeScript, providing a lightweight yet powerful solution for downloading videos from YouTube.
+SnatchVid is a fast and efficient video and playlist downloader developed by SNS Automation. This cross-platform app is built with Tauri, React, and TypeScript, providing a lightweight yet powerful solution for downloading videos from YouTube.
 
 🚀 Currently in Beta: This app is in development mode, and we are continuously improving features and fixing bugs.
 
@@ -27,8 +27,8 @@ Tauri CLI
 sh
 Copy
 Edit
-git clone https://github.com/your-repo/speedyt-downloader.git
-cd speedyt-downloader
+git clone https://github.com/sinan2000/SnatchVid-downloader.git
+cd SnatchVid-downloader
 3. Install Dependencies
 sh
 Copy

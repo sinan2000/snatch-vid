@@ -36,8 +36,14 @@
     ],
     "resources": [
       "bin/yt-dlp.exe",
+      "bin/ffmpeg.exe",
+
+      "bin/yt-dlp_x86.exe",
+      "bin/ffmpeg_x86.exe",
+
       "bin/yt-dlp_macos",
-      "bin/ffmpeg.exe"
+      "bin/ffmpeg_macos_arm",
+      "bin/ffmpeg_macos_x86"
     ],
     "shortDescription": "SnatchVid is a video downloader app powered by SNS Automation",
     "longDescription": "SnatchVid is a video downloader app powered by SNS Automation that allows you to download videos from various platforms like YouTube, Facebook, Instagram, and many more in preferred formats."
