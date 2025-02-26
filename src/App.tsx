@@ -18,6 +18,7 @@ function reducer(state: any, action: any) {
 export default function App() {
   const [visible, setVisible] = useState<boolean>(false);
   const [formState, dispatch] = useReducer(reducer, initialState);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     async function checkConfig() {
@@ -34,6 +35,7 @@ export default function App() {
   }, []);
 
   async function handleDownload() {
+    setLoading(true);
     const validUrlRegex = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/;
 
     if (!validUrlRegex.test(formState.url)) {
@@ -47,6 +49,8 @@ export default function App() {
       console.log("Downloading:", type);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -149,7 +153,10 @@ export default function App() {
         )}
 
         {/* Download Button */}
-        <button onClick={handleDownload} className="w-full py-2 mt-4 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition">
+        <button onClick={handleDownload} disabled={loading} className={`w-full py-2 mt-4 text-white rounded transition ${loading
+            ? "bg-gray-500 cursor-not-allowed"
+            : "bg-emerald-600 hover:bg-emerald-500"
+          }`}>
           Download
         </button>
 

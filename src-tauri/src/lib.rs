@@ -72,13 +72,16 @@ fn get_binary_paths() -> (String, String) {
     (yt_dlp_bin.to_string(), ffmpeg_bin.to_string())
 }
 
+// Struct for parsing yt-dlp JSON response
 #[derive(Debug, Deserialize)]
 struct YtDlpJSON {
     #[serde(rename = "_type")]
     entry_type: Option<String>,
     entries: Option<Vec<serde_json::Value>>,
+    id: Option<String>,
 }
 
+// Detect the type of URL and return 'video', 'playlist', or 'none'
 #[command]
 async fn detect_url_type(url: String) -> String {
     let (yt_dlp_bin, _) = get_binary_paths();
@@ -94,30 +97,39 @@ async fn detect_url_type(url: String) -> String {
             Ok(result) => {
                 if result.status.success() {
                     let json_output = String::from_utf8_lossy(&result.stdout);
+
+                    // Debugging: Print response
+                    println!("yt-dlp Full Response: {}", json_output);
+
+                    // Try parsing JSON
                     match serde_json::from_str::<YtDlpJSON>(&json_output) {
                         Ok(parsed) => {
-                            // Check if _type indicates a playlist
+                            // 1️. Check if `_type == "playlist"`
                             if let Some(ref t) = parsed.entry_type {
                                 if t == "playlist" {
                                     return "playlist".to_string();
                                 }
                             }
-                            // If entries exist and are non-empty, treat it as a playlist
+                            // 2️. Check if `entries` field is present and non-empty
                             if let Some(entries) = parsed.entries {
                                 if !entries.is_empty() {
                                     return "playlist".to_string();
                                 }
                             }
-                            // Otherwise, it's a single video
-                            "video".to_string()
+                            // 3️. If it has an `id` but no `entries`, it's a video
+                            if parsed.id.is_some() {
+                                return "video".to_string();
+                            }
+                            // 4️. Fallback: No valid data, return "none"
+                            return "none".to_string();
                         }
-                        Err(_) => "video".to_string(), // Fallback to video if JSON parsing fails
+                        Err(_) => "none".to_string(), // JSON parsing error
                     }
                 } else {
-                    "none".to_string() // Command executed but returned an error
+                    "none".to_string() // Command ran but failed
                 }
             }
-            Err(_) => "none".to_string(), // Error executing command
+            Err(_) => "none".to_string(), // Execution failed
         }
     })
     .await
