@@ -194,33 +194,53 @@ fn generate_args(
     ffmpeg_path: &str,
 ) -> Vec<String> {
     let mut args = vec![
-        "--ffmpeg-location".to_string(),
-        ffmpeg_path.to_string(),
         "--verbose".to_string(),
+        format!("--ffmpeg-location {}", ffmpeg_path),
     ];
 
-    if matches!(format, "mp3" | "wav" | "aac" | "flac") {
-        args.push("-x".to_string());
-        args.push("--audio-format".to_string());
-        args.push(format.to_string());
-        args.push("--audio-quality".to_string());
-        args.push("0".to_string());
-    } else {
-        let quality_map = match quality {
-            "4k" => "bestvideo[height=2160]+bestaudio[]/best[height=2160]",
-            "1440p" => "bestvideo[height=1440]+bestaudio/best[height=1440]",
-            "1080p" => "bestvideo[height=1080]+bestaudio/best[height=1080]",
-            "720p" => "bestvideo[height=720]+bestaudio/best[height=720]",
-            "480p" => "bestvideo[height=480]+bestaudio/best[height=480]",
-            "360p" => "bestvideo[height=360]+bestaudio/best[height=360]",
-            "240p" => "bestvideo[height=240]+bestaudio/best[height=240]",
-            "144p" => "bestvideo[height=144]+bestaudio/best[height=144]",
-            _ => "bestvideo+bestaudio/best", // Default to best quality
-        };
-        args.push("-f".to_string());
-        args.push(quality_map.to_string());
-        args.push("--merge-output-format".to_string());
-        args.push(format.to_string());
+    match format {
+        "mp4" => {
+            args.push(format!(
+                "-f \"bestvideo[height={}]+bestaudio[ext=m4a]\"",
+                quality
+            ));
+            args.push("--merge-output-format mp4".to_string());
+        }
+        "webm" => {
+            args.push(format!(
+                "-f \"bestvideo[height={}][ext=webm]+bestaudio[ext=webm]\"",
+                quality
+            ));
+            args.push("--merge-output-format webm".to_string());
+        }
+        "mp3" => {
+            args.push("-f \"bestaudio\"".to_string());
+            args.push("--extract-audio".to_string());
+            args.push("--audio-format mp3".to_string());
+        }
+        "m4a" => {
+            args.push("-f \"bestaudio[ext=m4a]\"".to_string());
+            args.push("--extract-audio".to_string());
+            args.push("--audio-format m4a".to_string());
+        }
+        "wav" => {
+            args.push("-f \"bestaudio\"".to_string());
+            args.push("--extract-audio".to_string());
+            args.push("--audio-format wav".to_string());
+        }
+        _ => {
+            eprintln!("Invalid format provided: {}", format);
+        }
+    }
+
+    if download_type == "playlist" {
+        args.push("--yes-playlist".to_string());
+    }
+
+    // Print the command arguments before returning them
+    println!("Generated yt-dlp arguments:");
+    for arg in &args {
+        println!("{}", arg);
     }
 
     args
@@ -232,21 +252,15 @@ async fn start_download(
     url: String,
     format: String,
     quality: String,
-    downloadType: String,
+    download_type: String,
 ) -> bool {
     let (yt_dlp_path, ffmpeg_path) = get_binary_paths();
 
-    let args = generate_args(&format, &quality, &downloadType, &ffmpeg_path);
+    let args = generate_args(&format, &quality, &download_type, &ffmpeg_path);
 
-    let result = task::spawn_blocking(move || {
-        if downloadType == "playlist" {
-            download_playlist(&yt_dlp_path, &url, args)
-        } else {
-            download_video(&yt_dlp_path, &url, args)
-        }
-    })
-    .await
-    .unwrap_or(false);
+    let result = task::spawn_blocking(move || download_video(&yt_dlp_path, &url, args))
+        .await
+        .unwrap_or(false);
 
     result
 }

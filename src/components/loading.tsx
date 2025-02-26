@@ -8,7 +8,7 @@ interface LoadingModalProps {
 }
 
 export default function LoadingModal({ text, phase, onClose, progress }: LoadingModalProps) {
-  const finished = phase === 3 || phase === 4
+  const finished = [3, 4].includes(phase);
   if (phase === 0) return null
 
   return (

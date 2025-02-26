@@ -9,7 +9,7 @@ import LoadingModal from "./components/loading";
 const form_initialState = {
   url: "",
   format: "mp4",
-  quality: "4k",
+  quality: "2160",
 };
 
 const buttons_initialState = {
@@ -22,6 +22,17 @@ const loading_initialState = {
   progress: 0,
   text: ["", "Preparing download", "Downloading", "Finished", "Error"],
 }
+
+const qualityMap = {
+  "2160": "4K",
+  "1440": "2K",
+  "1080": "Full HD",
+  "720": "HD",
+  "480": "SD",
+  "360": "360p",
+  "240": "240p",
+  "144": "144p",
+};
 
 function reducer(state: any, action: any) {
   return { ...state, [action.name]: action.value };
@@ -147,7 +158,7 @@ export default function App() {
         <div className="mt-4">
           <h2 className="text-lg font-semibold">Select Format:</h2>
           <div className="flex gap-4 mt-2">
-            {["mp4", "mp3", "wav", "aac", "flac"].map((f) => (
+            {["mp4", "webm", "mp3", "m4a", "wav"].map((f) => (
               <label key={f} className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -164,7 +175,7 @@ export default function App() {
         </div>
 
         {/* Quality Selection (Only for MP4) */}
-        {formState.format === "mp4" && (
+        {["mp4", "webm"].includes(formState.format) && (
           <div className="mt-4">
             <h2 className="text-lg font-semibold">Select Quality:</h2>
             <p className="text-xs mt-1 mb-2">
@@ -172,17 +183,17 @@ export default function App() {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              {["4k", "1440p", "1080p", "720p", "480p", "360p", "240p", "144p"].map((q) => (
-                <label key={q} className="flex items-center gap-2 cursor-pointer">
+              {Object.entries(qualityMap).map(([value, label]) => (
+                <label key={value} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="quality"
-                    value={q}
-                    checked={formState.quality === q}
+                    value={value}
+                    checked={formState.quality === value}
                     onChange={(e) => dispatchForm(e.target)}
                     className="accent-emerald-500"
                   />
-                  {q.toUpperCase()}
+                  {label}
                 </label>
               ))}
             </div>
