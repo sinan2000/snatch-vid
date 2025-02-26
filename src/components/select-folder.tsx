@@ -18,7 +18,7 @@ function SelectFolder({ visible, setVisible }: SelectFolderProps) {
       } catch (error) {
         console.error(error);
       }
-    };
+    }
     getPath();
   }, [visible]);
 
@@ -28,8 +28,7 @@ function SelectFolder({ visible, setVisible }: SelectFolderProps) {
       multiple: false,
     });
 
-    if (typeof selected === "string")
-      setPath(selected);
+    if (typeof selected === "string") setPath(selected);
   }
 
   async function handleConfirm() {
@@ -41,41 +40,42 @@ function SelectFolder({ visible, setVisible }: SelectFolderProps) {
         console.error(error);
       }
     }
-  };
+  }
 
-  if (!visible) return null
-
+  if (!visible) return null;
   return (
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-50 flex justify-center items-center">
-      <div className="bg-black text-white p-8 rounded-xl max-w-md w-full shadow-lg">
-        <h2 className="text-2xl font-bold mb-6">
-          Please select the default folder where the videos should be downloaded.
+      <div className="bg-[#1E1E1E] text-white p-6 rounded-lg max-w-sm w-full shadow-lg">
+        <h2 className="text-lg font-semibold text-[#A7F3D0] mb-4 text-center">
+          Select a default folder for downloads
         </h2>
 
-        <div className="flex flex-col space-y-4 mb-6">
-          <button
-            onClick={selectFolder}
-            className="w-full bg-gray-700 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
-            Select Folder
-          </button>
+        <div className="flex flex-col space-y-3 mb-4">
           <input
             type="text"
-            value={path || "Download folder..."}
+            value={path || "No folder selected"}
             readOnly
-            className="w-full p-3 bg-gray-800 text-gray-300 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="w-full p-2 text-sm bg-[#2C2C2C] text-gray-300 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
         </div>
 
-        <button
-          onClick={handleConfirm}
-          className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-        >
-          Confirm
-        </button>
+        {/* Buttons Row */}
+        <div className="flex gap-3">
+          <button
+            onClick={selectFolder}
+            className="flex-1 bg-[#2A2A2A] text-sm text-[#A7F3D0] py-2 px-3 rounded-lg font-medium hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          >
+            Choose Folder
+          </button>
+
+          <button
+            onClick={handleConfirm}
+            className="flex-1 bg-[#059669] text-sm text-white py-2 px-3 rounded-lg font-medium hover:bg-[#047857] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          >
+            Confirm
+          </button>
+        </div>
       </div>
     </div>
-  )
+  );
 }
-
-export default SelectFolder;
