@@ -1,172 +1,28 @@
 @import "tailwindcss";
 
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #1a1a1a;
-  color: #ffffff;
+@keyframes dots {
+
+  0%,
+  20% {
+    content: ".";
+  }
+
+  40% {
+    content: "..";
+  }
+
+  60% {
+    content: "...";
+  }
+
+  80%,
+  100% {
+    content: "";
+  }
 }
 
-.header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.logo {
-  height: 60px;
-  object-fit: contain;
-}
-
-.main {
-  flex: 1;
-  background-color: #2a2a2a;
-  border-radius: 12px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.inputGroup {
-  width: 100%;
-  display: flex;
-  gap: 1rem;
-}
-
-.urlInput {
-  flex: 1;
-  padding: 12px 16px;
-  border: 2px solid #47f7bc;
-  border-radius: 8px;
-  background-color: #333333;
-  color: white;
-  font-size: 1rem;
-}
-
-.urlInput:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(71, 247, 188, 0.3);
-}
-
-.urlInput[readonly] {
-  background-color: #252525;
-  border-color: #3ad9a2;
-}
-
-.radioGroup {
-  display: flex;
-  gap: 2rem;
-  justify-content: center;
-  margin: 1rem 0;
-}
-
-.radioLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  color: white;
-}
-
-.radioLabel input[type="radio"] {
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #47f7bc;
-  border-radius: 50%;
-  margin: 0;
-  cursor: pointer;
-}
-
-.radioLabel input[type="radio"]:checked {
-  background-color: #47f7bc;
-  box-shadow: inset 0 0 0 4px #2a2a2a;
-}
-
-.downloadButton,
-.folderButton {
-  background-color: #47f7bc;
-  color: #1a1a1a;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.downloadButton {
-  width: 200px;
-  margin: 0 auto;
-}
-
-.folderButton {
-  white-space: nowrap;
-}
-
-.downloadButton:hover,
-.folderButton:hover {
-  background-color: #3ad9a2;
-}
-
-.downloadButton:disabled {
-  background-color: #2a2a2a;
-  color: #666666;
-  cursor: not-allowed;
-}
-
-.footer {
-  background-color: #2a2a2a;
-  border-radius: 12px;
-  padding: 1.5rem;
-}
-
-.logs {
-  height: 200px;
-  overflow-y: auto;
-}
-
-.logs h3 {
-  margin: 0 0 1rem 0;
-  color: #47f7bc;
-}
-
-.logContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.logEntry {
-  font-family: monospace;
-  font-size: 0.875rem;
-  color: #cccccc;
-}
-
-/* Scrollbar styling */
-.logs::-webkit-scrollbar {
-  width: 8px;
-}
-
-.logs::-webkit-scrollbar-track {
-  background: #333333;
-  border-radius: 4px;
-}
-
-.logs::-webkit-scrollbar-thumb {
-  background: #47f7bc;
-  border-radius: 4px;
-}
-
-.logs::-webkit-scrollbar-thumb:hover {
-  background: #3ad9a2;
+.dots::after {
+  content: "";
+  display: inline-block;
+  animation: dots 3s infinite steps(1);
 }

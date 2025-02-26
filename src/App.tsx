@@ -18,9 +18,9 @@ const buttons_initialState = {
 }
 
 const loading_initialState = {
-  phase: 0, // 0: not started, 1. getting url type, 2. downloading, 3. finished, -1 error
+  phase: 0, // 0: not started, 1. getting url type, 2. downloading, 3. finished, 4 error
   progress: 0,
-  text: ["Detecting URL type", "Downloading...", "Finished", "Error"],
+  text: ["", "Preparing download", "Downloading", "Finished", "Error"],
 }
 
 function reducer(state: any, action: any) {
@@ -82,10 +82,10 @@ export default function App() {
           setVisible={(value: boolean) => dispatchButtons({ name: 'settings', value })}
         />
         <LoadingModal
-          text={loading_initialState.text[loadingState.phase - 1]}
-          phase={loading_initialState.phase}
+          text={loadingState.text[loadingState.phase]}
+          phase={loadingState.phase}
           onClose={(value: number) => dispatchLoading({ name: 'phase', value })}
-          progress={loading_initialState.progress}
+          progress={loadingState.progress}
         />
 
         {/* Top Section */}
