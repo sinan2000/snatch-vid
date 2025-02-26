@@ -74,11 +74,12 @@ fn get_binary_paths() -> (String, String) {
 
 // Struct for parsing yt-dlp JSON output
 #[derive(Debug, Deserialize)]
-struct YtDlpResponse {
+struct YtDlpJSON {
     #[serde(rename = "_type")]
     entry_type: Option<String>,
-    id: Option<String>,
     entries: Option<Vec<serde_json::Value>>,
+    id: Option<String>,
+    playlist_count: Option<u32>,
 }
 
 // Detect the type of URL (video, playlist, or none)
@@ -86,10 +87,9 @@ struct YtDlpResponse {
 async fn detect_url_type(url: String) -> String {
     let (yt_dlp_bin, _) = get_binary_paths();
 
-    // Run yt-dlp with -J (dump-single-json) and --no-warnings
     let result = task::spawn_blocking(move || {
         let output = Command::new(yt_dlp_bin)
-            .arg("-J") // Use single JSON dump
+            .arg("-J") // dump-single-json
             .arg("--no-warnings")
             .arg(url)
             .output();
@@ -98,22 +98,27 @@ async fn detect_url_type(url: String) -> String {
             Ok(result) => {
                 if result.status.success() {
                     let json_output = String::from_utf8_lossy(&result.stdout);
-                    println!("yt-dlp Full Response: {}", json_output);
 
-                    match serde_json::from_str::<YtDlpResponse>(&json_output) {
+                    match serde_json::from_str::<YtDlpJSON>(&json_output) {
                         Ok(parsed) => {
-                            // If the _type field equals "playlist" or if entries exist and are non-empty
+                            // Check if _type indicates a playlist.
                             if let Some(ref t) = parsed.entry_type {
                                 if t == "playlist" {
+                                    // If playlist_count exists and is 0, or if entries is empty, treat as "none".
+                                    if let Some(count) = parsed.playlist_count {
+                                        if count == 0 {
+                                            return "none".to_string();
+                                        }
+                                    }
+                                    if let Some(ref entries) = parsed.entries {
+                                        if entries.is_empty() {
+                                            return "none".to_string();
+                                        }
+                                    }
                                     return "playlist".to_string();
                                 }
                             }
-                            if let Some(entries) = parsed.entries {
-                                if !entries.is_empty() {
-                                    return "playlist".to_string();
-                                }
-                            }
-                            // If there is an "id" (and no playlist indication), assume video
+                            // Otherwise, if we have an id, assume it's a video.
                             if parsed.id.is_some() {
                                 return "video".to_string();
                             }

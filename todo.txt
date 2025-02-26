@@ -1,5 +1,3 @@
-- validate url
-- detect playlist/ video
 - download
 - progress bar and stop button on downloading - progress bar based on fragment (TA 00:00 (frag 1216/1217)) for videos
 and based on index of total for playlists
