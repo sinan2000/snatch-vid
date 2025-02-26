@@ -34,8 +34,16 @@ export default function App() {
   }, []);
 
   function handleDownload() {
-    console.log(formState);
+    const validUrlRegex = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/;
+
+    if (!validUrlRegex.test(formState.url)) {
+      alert("Invalid URL! Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+
+    console.log("Downloading:", formState);
   }
+
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white">
