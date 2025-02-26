@@ -5,6 +5,8 @@ import { Logo } from "./components/logo"
 import { Settings, HelpCircle } from "lucide-react"
 import SelectFolder from "./components/select-folder";
 import LoadingModal from "./components/loading";
+import { listen } from "@tauri-apps/api/event";
+import { parseDownloadPercentage } from "./utils/helpers";
 
 const form_initialState = {
   url: "",
@@ -57,6 +59,20 @@ export default function App() {
       }
     }
     checkConfig();
+  }, []);
+
+  useEffect(() => {
+    const unlisten = listen("progress", event => {
+      console.log("Progress log: ", event.payload);
+      const percent = parseDownloadPercentage(event.payload as string);
+      if (percent) {
+        dispatchLoading({ name: 'progress', value: percent });
+      }
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    }
   }, []);
 
   async function handleDownload() {

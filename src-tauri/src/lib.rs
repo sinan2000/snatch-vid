@@ -1,9 +1,11 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::command;
+use tauri::Emitter;
 use tokio::task;
 
 // Struct for storing the file path
@@ -199,7 +201,6 @@ fn generate_args(
     download_path: &str,
 ) -> Vec<String> {
     let mut args = vec![
-        "--verbose".to_string(),
         "--ffmpeg-location".to_string(),
         ffmpeg_path.to_string(),
         "-P".to_string(),
@@ -209,7 +210,7 @@ fn generate_args(
     match format {
         "mp4" => {
             args.push(format!(
-                "-f bestvideo[height={}]+bestaudio[ext=m4a]",
+                "-f bestvideo[height={}]+bestaudio[ext=m4a]/best",
                 quality
             ));
             args.push("--merge-output-format".to_string());
@@ -217,7 +218,7 @@ fn generate_args(
         }
         "webm" => {
             args.push(format!(
-                "-f bestvideo[height={}][ext=webm]+bestaudio[ext=webm]",
+                "-f bestvideo[height={}][ext=webm]+bestaudio[ext=webm]/best",
                 quality
             ));
             args.push("--merge-output-format".to_string());
@@ -250,11 +251,11 @@ fn generate_args(
         args.push("--yes-playlist".to_string());
     }
 
-    // Print the command arguments before returning them
-    println!("Generated yt-dlp arguments:");
-    for arg in &args {
-        println!("{}", arg);
-    }
+    // naming - title.extension
+    args.push("-o".to_string());
+    args.push("%(title)s.%(ext)s".to_string());
+
+    args.push("--newline".to_string());
 
     args
 }
@@ -262,6 +263,7 @@ fn generate_args(
 // Starts the download process
 #[command]
 async fn start_download(
+    window: tauri::Window,
     url: String,
     format: String,
     quality: String,
@@ -286,36 +288,75 @@ async fn start_download(
 
     let path_str = final_download_path.to_string_lossy().to_string();
 
-    let args = generate_args(
-        &format,
-        &quality,
-        &download_type,
-        &ffmpeg_path,
-        &path_str,
-    );
+    let args = generate_args(&format, &quality, &download_type, &ffmpeg_path, &path_str);
 
-    let result = task::spawn_blocking(move || download_process(&yt_dlp_path, &url, args))
+    let result = task::spawn_blocking(move || download_process(&yt_dlp_path, &url, args, window))
         .await
         .unwrap_or(false);
 
     result
 }
 
-fn download_process(yt_dlp_path: &str, url: &str, args: Vec<String>) -> bool {
-    let status = Command::new(yt_dlp_path)
+fn download_process(
+    yt_dlp_path: &str,
+    url: &str,
+    args: Vec<String>,
+    window: tauri::Window,
+) -> bool {
+    let mut child = match Command::new(yt_dlp_path)
         .arg(url)
         .args(&args)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status();
-
-    match status {
-        Ok(status) => status.success(),
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
         Err(e) => {
             eprintln!("Failed to execute yt-dlp: {}", e);
-            false
+            return false;
         }
-    }
+    };
+
+    // Take the stdout and stderr out of child.
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+
+    let window_stdout = window.clone();
+    let stdout_handle = std::thread::spawn(move || {
+        if let Some(stdout) = stdout {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    let _ = window_stdout.emit("progress", line);
+                }
+            }
+        }
+    });
+
+    let window_stderr = window.clone();
+    let stderr_handle = std::thread::spawn(move || {
+        if let Some(stderr) = stderr {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    let _ = window_stderr.emit("progress", line);
+                }
+            }
+        }
+    });
+
+    let status = match child.wait() {
+        Ok(status) => status,
+        Err(e) => {
+            eprintln!("Failed to wait for yt-dlp process: {}", e);
+            return false;
+        }
+    };
+
+    let _ = stdout_handle.join();
+    let _ = stderr_handle.join();
+
+    status.success()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

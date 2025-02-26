@@ -1,6 +1,3 @@
-- progress bar and stop button on downloading - progress bar based on fragment (TA 00:00 (frag 1216/1217)) for videos
-and based on index of total for playlists
-- playlist download to folder named by playlist title
 - how to button representing 2/3 slides with photo and explanation
 - hide cmd runs ?? so everything runs in the background
 - error message display
