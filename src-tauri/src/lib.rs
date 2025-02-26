@@ -32,12 +32,26 @@ fn create_config(dir: String) {
     }
 }
 
+// Read the config returning the `dir` field
+#[command]
+fn read_config() -> Option<String> {
+    let path = get_config_path();
+
+    if let Ok(contents) = fs::read_to_string(&path) {
+        if let Ok(config) = serde_json::from_str::<AppConfig>(&contents) {
+            return Some(config.dir);
+        }
+    }
+
+    None // if it doesn't exist
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![config_exists, create_config])
+        .invoke_handler(tauri::generate_handler![config_exists, create_config, read_config])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

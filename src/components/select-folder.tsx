@@ -2,23 +2,25 @@ import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 
-function SelectFolder() {
-  const [visible, setVisible] = useState<boolean>(true);
+interface SelectFolderProps {
+  visible: boolean;
+  setVisible: (value: boolean) => void;
+}
+
+function SelectFolder({ visible, setVisible }: SelectFolderProps) {
   const [path, setPath] = useState<string | null>(null);
 
   useEffect(() => {
-    async function checkConfig() {
+    async function getPath() {
       try {
-        const exists = await invoke<boolean>("config_exists");
-        if (exists) {
-          setVisible(false);
-        }
+        const dir = await invoke<string>("read_config");
+        setPath(dir);
       } catch (error) {
         console.error(error);
       }
-    }
-    checkConfig();
-  }, []);
+    };
+    getPath();
+  }, [visible]);
 
   async function selectFolder() {
     const selected = await open({
@@ -44,7 +46,7 @@ function SelectFolder() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center">
+    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-50 flex justify-center items-center">
       <div className="bg-black text-white p-8 rounded-xl max-w-md w-full shadow-lg">
         <h2 className="text-2xl font-bold mb-6">
           Please select the default folder where the videos should be downloaded.
