@@ -72,23 +72,24 @@ fn get_binary_paths() -> (String, String) {
     (yt_dlp_bin.to_string(), ffmpeg_bin.to_string())
 }
 
-// Struct for parsing yt-dlp JSON response
+// Struct for parsing yt-dlp JSON output
 #[derive(Debug, Deserialize)]
-struct YtDlpJSON {
+struct YtDlpResponse {
     #[serde(rename = "_type")]
     entry_type: Option<String>,
-    entries: Option<Vec<serde_json::Value>>,
     id: Option<String>,
+    entries: Option<Vec<serde_json::Value>>,
 }
 
-// Detect the type of URL and return 'video', 'playlist', or 'none'
+// Detect the type of URL (video, playlist, or none)
 #[command]
 async fn detect_url_type(url: String) -> String {
     let (yt_dlp_bin, _) = get_binary_paths();
 
+    // Run yt-dlp with -J (dump-single-json) and --no-warnings
     let result = task::spawn_blocking(move || {
         let output = Command::new(yt_dlp_bin)
-            .arg("--dump-json")
+            .arg("-J") // Use single JSON dump
             .arg("--no-warnings")
             .arg(url)
             .output();
@@ -97,43 +98,49 @@ async fn detect_url_type(url: String) -> String {
             Ok(result) => {
                 if result.status.success() {
                     let json_output = String::from_utf8_lossy(&result.stdout);
-
-                    // Debugging: Print response
                     println!("yt-dlp Full Response: {}", json_output);
 
-                    // Try parsing JSON
-                    match serde_json::from_str::<YtDlpJSON>(&json_output) {
+                    match serde_json::from_str::<YtDlpResponse>(&json_output) {
                         Ok(parsed) => {
-                            // 1️. Check if `_type == "playlist"`
+                            // If the _type field equals "playlist" or if entries exist and are non-empty
                             if let Some(ref t) = parsed.entry_type {
                                 if t == "playlist" {
                                     return "playlist".to_string();
                                 }
                             }
-                            // 2️. Check if `entries` field is present and non-empty
                             if let Some(entries) = parsed.entries {
                                 if !entries.is_empty() {
                                     return "playlist".to_string();
                                 }
                             }
-                            // 3️. If it has an `id` but no `entries`, it's a video
+                            // If there is an "id" (and no playlist indication), assume video
                             if parsed.id.is_some() {
                                 return "video".to_string();
                             }
-                            // 4️. Fallback: No valid data, return "none"
-                            return "none".to_string();
+                            "none".to_string()
                         }
-                        Err(_) => "none".to_string(), // JSON parsing error
+                        Err(e) => {
+                            println!("JSON Parsing Error: {}", e);
+                            "none".to_string()
+                        }
                     }
                 } else {
-                    "none".to_string() // Command ran but failed
+                    let err_out = String::from_utf8_lossy(&result.stderr);
+                    println!("yt-dlp Error: {}", err_out);
+                    "none".to_string()
                 }
             }
-            Err(_) => "none".to_string(), // Execution failed
+            Err(e) => {
+                println!("Failed to execute yt-dlp: {}", e);
+                "none".to_string()
+            }
         }
     })
     .await
-    .unwrap_or_else(|_| "none".to_string());
+    .unwrap_or_else(|e| {
+        println!("Task join error: {}", e);
+        "none".to_string()
+    });
 
     result
 }
