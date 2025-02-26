@@ -69,6 +69,14 @@ export default function App() {
 
       dispatchLoading({ name: 'phase', value: 2 });
 
+      const success = await invoke("start_download", {
+        url: formState.url,
+        format: formState.format,
+        quality: formState.quality,
+        downloadType: type
+      });
+
+      //dispatchLoading({ name: 'phase', value: 3 + (success === false ? 0 : 1) });
     } catch (error) {
       console.error(error);
     }

@@ -186,6 +186,118 @@ async fn setup_playlist_folder(url: String) -> bool {
     result
 }
 
+// Generates the arguments for the yt-dlp command
+fn generate_args(
+    format: &str,
+    quality: &str,
+    download_type: &str,
+    ffmpeg_path: &str,
+) -> Vec<String> {
+    let mut args = vec![
+        "--ffmpeg-location".to_string(),
+        ffmpeg_path.to_string(),
+        "--verbose".to_string(),
+    ];
+
+    if matches!(format, "mp3" | "wav" | "aac" | "flac") {
+        args.push("-x".to_string());
+        args.push("--audio-format".to_string());
+        args.push(format.to_string());
+        args.push("--audio-quality".to_string());
+        args.push("0".to_string());
+    } else {
+        let quality_map = match quality {
+            "4k" => "bestvideo[height=2160]+bestaudio[]/best[height=2160]",
+            "1440p" => "bestvideo[height=1440]+bestaudio/best[height=1440]",
+            "1080p" => "bestvideo[height=1080]+bestaudio/best[height=1080]",
+            "720p" => "bestvideo[height=720]+bestaudio/best[height=720]",
+            "480p" => "bestvideo[height=480]+bestaudio/best[height=480]",
+            "360p" => "bestvideo[height=360]+bestaudio/best[height=360]",
+            "240p" => "bestvideo[height=240]+bestaudio/best[height=240]",
+            "144p" => "bestvideo[height=144]+bestaudio/best[height=144]",
+            _ => "bestvideo+bestaudio/best", // Default to best quality
+        };
+        args.push("-f".to_string());
+        args.push(quality_map.to_string());
+        args.push("--merge-output-format".to_string());
+        args.push(format.to_string());
+    }
+
+    args
+}
+
+// Starts the download process
+#[command]
+async fn start_download(
+    url: String,
+    format: String,
+    quality: String,
+    downloadType: String,
+) -> bool {
+    let (yt_dlp_path, ffmpeg_path) = get_binary_paths();
+
+    let args = generate_args(&format, &quality, &downloadType, &ffmpeg_path);
+
+    let result = task::spawn_blocking(move || {
+        if downloadType == "playlist" {
+            download_playlist(&yt_dlp_path, &url, args)
+        } else {
+            download_video(&yt_dlp_path, &url, args)
+        }
+    })
+    .await
+    .unwrap_or(false);
+
+    result
+}
+
+fn download_video(yt_dlp_path: &str, url: &str, args: Vec<String>) -> bool {
+    let output = Command::new(yt_dlp_path).arg(url).args(&args).output();
+
+    match output {
+        Ok(result) => result.status.success(),
+        Err(_) => false,
+    }
+}
+
+fn download_playlist(yt_dlp_path: &str, url: &str, args: Vec<String>) -> bool {
+    let base_dir = match read_config() {
+        Some(dir) => dir,
+        None => return false,
+    };
+
+    let title = match get_playlist_title(&yt_dlp_path, &url) {
+        Ok(t) => t,
+        Err(_) => return false,
+    };
+
+    let mut folder_path = PathBuf::from(&base_dir).join(&title);
+    let mut counter = 2;
+    while folder_path.exists() {
+        folder_path = PathBuf::from(&base_dir).join(format!("{}_{}", title, counter));
+        counter += 1;
+    }
+
+    if fs::create_dir_all(&folder_path).is_err() {
+        return false;
+    }
+
+    let mut modified_args = args.clone();
+    modified_args.push("-P".to_string());
+    modified_args.push(folder_path.to_string_lossy().to_string());
+
+    // Run yt-dlp
+    let output = Command::new(yt_dlp_path)
+        .arg(url)
+        .args(modified_args)
+        .output();
+
+    match output {
+        Ok(result) => result.status.success(),
+        Err(_) => false,
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -196,7 +308,8 @@ pub fn run() {
             create_config,
             read_config,
             detect_url_type,
-            setup_playlist_folder
+            setup_playlist_folder,
+            start_download
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
