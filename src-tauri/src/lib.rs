@@ -1,5 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
+use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
 use tauri::command;
@@ -46,12 +47,79 @@ fn read_config() -> Option<String> {
     None // if it doesn't exist
 }
 
+// Detect correct binary paths for `yt-dlp` and `ffmpeg`
+fn get_binary_paths() -> (String, String) {
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+
+    let yt_dlp_bin = match (os, arch) {
+        ("windows", "x86_64") => "bin/yt-dlp.exe",
+        ("windows", "x86") => "bin/yt-dlp_x86.exe",
+        ("macos", "aarch64") => "bin/yt-dlp_macos",
+        ("macos", "x86_64") => "bin/yt-dlp_macos",
+        _ => panic!("Unsupported OS or architecture!"),
+    };
+
+    let ffmpeg_bin = match (os, arch) {
+        ("windows", "x86_64") => "bin/ffmpeg.exe",
+        ("windows", "x86") => "bin/ffmpeg_x86.exe",
+        ("macos", "aarch64") => "bin/ffmpeg_macos_arm",
+        ("macos", "x86_64") => "bin/ffmpeg_macos_x86",
+        _ => panic!("Unsupported OS or architecture!"),
+    };
+
+    (yt_dlp_bin.to_string(), ffmpeg_bin.to_string())
+}
+
+// Struct to parse the JSON output from `yt-dlp`
+#[derive(Debug, Deserialize)]
+struct YtDlpJSON {
+    #[serde(rename = "_type")]
+    entry_type: Option<String>,
+}
+
+// Command to detect if URL is video, playlist or None
+#[command]
+fn detect_url_type(url: String) -> String {
+    let (yt_dlp_bin, _) = get_binary_paths();
+
+    let output = Command::new(yt_dlp_bin)
+        .arg("--dump-json")
+        .arg("--no-warnings")
+        .arg("--flat-playlist")
+        .arg(url)
+        .output();
+
+    match output {
+        Ok(result) => {
+            if result.status.success() {
+                let json_output = String::from_utf8_lossy(&result.stdout);
+                
+                match serde_json::from_str::<YtDlpJSON>(&json_output) {
+                    Ok(parsed) => {
+                        if let Some(entry_type) = parsed.entry_type {
+                            if entry_type == "playlist" {
+                                return "playlist".to_string();
+                            }
+                        }
+                        return "video".to_string();
+                    }
+                    Err(_) => return "video".to_string(), // video by default
+                }
+            }
+        }
+        Err(_) => return "none".to_string(), // error
+    }
+
+    "none".to_string() // fallback
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![config_exists, create_config, read_config])
+        .invoke_handler(tauri::generate_handler![config_exists, create_config, read_config, detect_url_type])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

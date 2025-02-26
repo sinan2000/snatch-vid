@@ -33,7 +33,7 @@ export default function App() {
     checkConfig();
   }, []);
 
-  function handleDownload() {
+  async function handleDownload() {
     const validUrlRegex = /^(https?:\/\/)[^\s/$.?#].[^\s]*$/;
 
     if (!validUrlRegex.test(formState.url)) {
@@ -41,9 +41,10 @@ export default function App() {
       return;
     }
 
-    console.log("Downloading:", formState);
-  }
+    const type = await invoke<string>("detect_url_type", { url: formState.url });
 
+    console.log("Downloading:", type);
+  }
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white">
