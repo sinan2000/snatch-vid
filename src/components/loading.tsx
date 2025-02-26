@@ -26,11 +26,29 @@ export function LoadingModal({ text, phase, onClose, progress }: LoadingModalPro
         </p>
 
         {phase === 2 && (
-          <div className="w-full max-w-3xl my-4">
-            <progress value={progress} max="100" className="w-full" />
-            <span className="ml-2">{progress}%</span>
+          <div className="w-full max-w-3xl my-4 relative">
+            {/* Background Bar */}
+            <div className="w-full h-6 bg-gray-700 rounded-full overflow-hidden">
+              {/* Progress Fill */}
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${progress}%`,
+                  background: "linear-gradient(to right, #059669, #34D399)",
+                }}
+              />
+            </div>
+
+            {/* Percentage Indicator Inside */}
+            <span
+              className="absolute inset-0 flex justify-center items-center text-sm font-semibold transition-colors"
+              style={{ color: progress > 50 ? "#1E1E1E" : "#FFFFFF" }} 
+            >
+              {progress}%
+            </span>
           </div>
         )}
+
 
         {finished && (
           <div className="mt-4 flex items-center flex-col">
