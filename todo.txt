@@ -1,9 +1,6 @@
-- how to button representing 2/3 slides with photo and explanation
-- hide cmd runs ?? so everything runs in the background
-- reset reducers on finish job
-- error message display
+-  error message display
 - locale and detect, also bar up
 - create update logic to check for releases on github and popup if so to reinstall
-- log box at bottom, send signals 
+- how to button representing 2/3 slides with photo and explanation
 
 BUILD AND RELEASE

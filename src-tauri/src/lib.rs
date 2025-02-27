@@ -303,21 +303,40 @@ fn download_process(
     args: Vec<String>,
     window: tauri::Window,
 ) -> bool {
-    let mut child = match Command::new(yt_dlp_path)
-        .arg(url)
-        .args(&args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-    {
-        Ok(child) => child,
-        Err(e) => {
-            eprintln!("Failed to execute yt-dlp: {}", e);
-            return false;
-        }
+    // On Windows, set the flag to not create a window.
+    #[cfg(windows)]
+    let mut child = {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        Command::new(yt_dlp_path)
+            .arg(url)
+            .args(&args)
+            .creation_flags(CREATE_NO_WINDOW)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap_or_else(|e| {
+                eprintln!("Failed to spawn process: {}", e);
+                panic!();
+            })
     };
 
-    // Take the stdout and stderr out of child.
+    // For non-Windows systems, spawn normally.
+    #[cfg(not(windows))]
+    let mut child = {
+        Command::new(yt_dlp_path)
+            .arg(url)
+            .args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap_or_else(|e| {
+                eprintln!("Failed to spawn process: {}", e);
+                panic!();
+            })
+    };
+
+    // Take stdout and stderr and spawn threads to read them.
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
 
