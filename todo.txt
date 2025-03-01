@@ -1,5 +1,9 @@
+WHEN UPLOADING ON SNS AUTOMATION WEBSITE, BUY SIGNER CERT AND ALSO:
+
 - locale and detect, also bar up
 - how to button representing 2/3 slides with photo and explanation
+- check youtube mixes
+
 - npx tauri signer generate; then in tauri config json:
 "updater": {
   "active": true,
@@ -9,5 +13,3 @@
   run: npx tauri signer sign --secret-key "${{ secrets.TAURI_PRIVATE_KEY }}" --files "src-tauri/target/**/SnatchVid*.tar.gz"
 
 BUILD AND RELEASE
-
-- check youtube mixes
