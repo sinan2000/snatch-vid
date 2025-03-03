@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "SnatchVid",
-  "version": "1.0.0",
   "identifier": "com.snatchvid-sns.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -35,8 +34,8 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "bin/yt-dlp_macos",
-      "bin/ffmpeg_macos_arm"
+      "bin/yt-dlp.exe",
+      "bin/ffmpeg.exe"
     ],
     "shortDescription": "SnatchVid is a video downloader app powered by SNS Automation",
     "longDescription": "SnatchVid is a video downloader app powered by SNS Automation that allows you to download videos from various platforms like YouTube, Facebook, Instagram, and many more in preferred formats."

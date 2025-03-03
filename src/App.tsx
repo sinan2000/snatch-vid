@@ -66,6 +66,7 @@ export default function App() {
   useEffect(() => {
     const unlisten = listen("progress", event => {
       const logLine = event.payload as string;
+      console.log(logLine);
 
       // If this line indicates a new video is starting:
       const itemInfo = parseDownloadingItem(logLine);
