@@ -107,7 +107,7 @@ export default function App() {
 
     try {
       const type = await invoke<string>("detect_url_type", { url: formState.url });
-
+      console.log("type found:", type);
       let playlistFolder = "";
 
       if (type === "none") {

@@ -89,8 +89,6 @@ async fn detect_url_type(url: String) -> String {
             .output()
             .ok()?;
 
-        println!("yt-dlp output: {:?}", output);
-
         if !output.status.success() {
             return None;
         }
