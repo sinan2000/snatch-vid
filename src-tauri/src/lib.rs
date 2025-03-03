@@ -1,7 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::fs;
+use std::{env, fs};
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -274,11 +274,10 @@ fn download_process(
     let mut child = {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        const DETACHED_PROCESS: u32 = 0x00000008;
-        Command::new(yt_dlp_path)
+        Command::new(env::current_dir().unwrap().join(yt_dlp_path))
             .arg(url)
             .args(&args)
-            .creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS)
+            .creation_flags(CREATE_NO_WINDOW)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
