@@ -1,4 +1,3 @@
-- also block cmd for detect_url_type
 - error message display
 - locale and detect, also bar up
 - create update logic to check for releases on github and popup if so to reinstall

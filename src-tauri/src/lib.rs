@@ -8,6 +8,7 @@ use std::process::{Command, Stdio};
 use tauri::command;
 use tauri::Emitter;
 use tokio::task;
+use std::os::windows::process::CommandExt;
 
 // Struct for storing the file path
 #[derive(Serialize, Deserialize, Debug)]
@@ -81,6 +82,19 @@ async fn detect_url_type(url: String) -> (String, String) {
     let (yt_dlp_bin, _) = get_binary_paths();
 
     task::spawn_blocking(move || {
+        #[cfg(windows)]
+        let output = Command::new(env::current_dir().unwrap().join(&yt_dlp_bin))
+            .arg("-J")
+            .arg("--no-warnings")
+            .arg("--flat-playlist")
+            .arg(&url)
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .ok()?;
+
+        #[cfg(not(windows))]
         let output = Command::new(yt_dlp_bin)
             .arg("-J")
             .arg("--no-warnings")
@@ -272,7 +286,6 @@ fn download_process(
     // On Windows, set the flag to not create a window.
     #[cfg(windows)]
     let mut child = {
-        use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         Command::new(env::current_dir().unwrap().join(yt_dlp_path))
             .arg(url)
