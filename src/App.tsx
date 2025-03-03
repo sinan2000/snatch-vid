@@ -106,15 +106,15 @@ export default function App() {
     }
 
     try {
-      const type = await invoke<string>("detect_url_type", { url: formState.url });
-      console.log("type found:", type);
+      const [type, playlistTitle] = await invoke<[string, string]>("detect_url_type", { url: formState.url });
+
       let playlistFolder = "";
 
       if (type === "none") {
         alert("No video or playlist found! Please check the URL and try again.");
         return;
       } else if (type === "playlist") {
-        playlistFolder = await invoke("setup_playlist_folder", { url: formState.url });
+        playlistFolder = await invoke("setup_playlist_folder", { title: playlistTitle });
       }
 
       dispatchLoading({ name: 'phase', value: 2 });

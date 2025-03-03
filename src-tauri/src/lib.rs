@@ -75,9 +75,9 @@ fn get_binary_paths() -> (String, String) {
     (yt_dlp_bin.to_string(), ffmpeg_bin.to_string())
 }
 
-// Detect the type of URL passed (video, playlist, or none)
+// Detect the type of URL passed (video, playlist, or none) and return it with playlist title if present
 #[command]
-async fn detect_url_type(url: String) -> String {
+async fn detect_url_type(url: String) -> (String, String) {
     let (yt_dlp_bin, _) = get_binary_paths();
 
     task::spawn_blocking(move || {
@@ -106,45 +106,21 @@ async fn detect_url_type(url: String) -> String {
         if parsed.get("_type").map_or(false, |t| t == "playlist") {
             if let Some(entries) = parsed.get("entries").and_then(|e| e.as_array()) {
                 if !entries.is_empty() {
-                    return Some("playlist".to_string());
+                    let title = parsed.get("title").and_then(|t| t.as_str()).unwrap_or("none").to_string();
+                    return Some(("playlist".to_string(), title));
                 }
             }
         }
 
         if parsed.get("_type").map_or(false, |t| t == "video") {
-            return Some("video".to_string());
+            return Some(("video".to_string(), "none".to_string()));
         }
 
         None
     })
     .await
     .unwrap_or(None)
-    .unwrap_or_else(|| "none".to_string())
-}
-
-// Fetches the playlist title of the given URL
-fn get_playlist_title(yt_dlp_path: &str, url: &str) -> Result<String, String> {
-    let output = Command::new(yt_dlp_path)
-        .args(&["--print", "%(playlist_title)s"]) // Removed --flat-playlist
-        .arg(url)
-        .output()
-        .map_err(|e| format!("Failed to execute yt-dlp: {}", e))?;
-
-    if !output.status.success() {
-        return Err("yt-dlp failed to fetch playlist title.".to_string());
-    }
-
-    let title = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .next()
-        .unwrap_or("")
-        .trim()
-        .replace("\n", "_");
-
-    if title.is_empty() {
-        return Err("Playlist title is empty. Check URL.".to_string());
-    }
-    Ok(title)
+    .unwrap_or_else(|| ("none".to_string(), "none".to_string()))
 }
 
 // Creates a new directory at the given path
@@ -168,20 +144,12 @@ fn create_folder(base_dir: &str, title: &str) -> Option<String> {
 
 // Creates a new folder where the playlist will be downloaded
 #[command]
-async fn setup_playlist_folder(url: String) -> Option<String> {
+async fn setup_playlist_folder(title: String) -> Option<String> {
     let result = task::spawn_blocking(move || {
-        let (yt_dlp_path, _) = get_binary_paths();
-
         let base_dir = match read_config() {
             Some(dir) => dir,
             None => return None,
         };
-
-        let title = match get_playlist_title(&yt_dlp_path, &url) {
-            Ok(t) => t,
-            Err(_) => return None,
-        };
-
         create_folder(&base_dir, &title)
     })
     .await
