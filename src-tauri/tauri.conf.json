@@ -25,11 +25,11 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "icons/32x32_rgba.png",
-      "icons/128x128_rgba.png",
-      "icons/128x128_rgba.png",
-      "icons/256x256_rgba.png",
-      "icons/icon.png",
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/256x256.png",
+      "icons/512x512.png",
       "icons/icon.icns",
       "icons/icon.ico"
     ],

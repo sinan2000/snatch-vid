@@ -1,3 +1,4 @@
+- in order to download best available if current not available, you have to loop and check; /best will not give ffmpeg based best, but rather bundled best
 - error message display
 - locale and detect, also bar up
 - how to button representing 2/3 slides with photo and explanation
