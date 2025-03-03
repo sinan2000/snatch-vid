@@ -1,5 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -74,50 +75,49 @@ fn get_binary_paths() -> (String, String) {
     (yt_dlp_bin.to_string(), ffmpeg_bin.to_string())
 }
 
-// Struct for parsing yt-dlp JSON output
-#[derive(Debug, Deserialize)]
-struct YtDlpJSON {
-    #[serde(rename = "_type")]
-    entry_type: Option<String>,
-    entries: Option<Vec<serde_json::Value>>,
-    id: Option<String>,
-    playlist_count: Option<u32>,
-}
-
 // Detect the type of URL passed (video, playlist, or none)
 #[command]
 async fn detect_url_type(url: String) -> String {
     let (yt_dlp_bin, _) = get_binary_paths();
+
     task::spawn_blocking(move || {
         let output = Command::new(yt_dlp_bin)
             .arg("-J")
             .arg("--no-warnings")
+            .arg("--flat-playlist")
             .arg(url)
             .output()
             .ok()?;
+
+        println!("yt-dlp output: {:?}", output);
+
         if !output.status.success() {
             return None;
         }
+
         let json_output = String::from_utf8_lossy(&output.stdout);
-        let parsed: YtDlpJSON = serde_json::from_str(&json_output).ok()?;
-        if let Some(ref t) = parsed.entry_type {
-            if t == "playlist" {
-                if parsed.playlist_count.unwrap_or(1) == 0
-                    || parsed
-                        .entries
-                        .as_ref()
-                        .map_or(false, |entries| entries.is_empty())
-                {
-                    return Some("none".to_string());
+
+        let parsed: Value = match serde_json::from_str(&json_output) {
+            Ok(parsed) => parsed,
+            Err(err) => {
+                eprintln!("Failed to parse yt-dlp JSON output: {}", err);
+                return None;
+            }
+        };
+
+        if parsed.get("_type").map_or(false, |t| t == "playlist") {
+            if let Some(entries) = parsed.get("entries").and_then(|e| e.as_array()) {
+                if !entries.is_empty() {
+                    return Some("playlist".to_string());
                 }
-                return Some("playlist".to_string());
             }
         }
-        if parsed.id.is_some() {
-            Some("video".to_string())
-        } else {
-            Some("none".to_string())
+
+        if parsed.get("_type").map_or(false, |t| t == "video") {
+            return Some("video".to_string());
         }
+
+        None
     })
     .await
     .unwrap_or(None)
