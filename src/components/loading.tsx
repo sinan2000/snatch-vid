@@ -1,4 +1,4 @@
-import { Loader2, CheckCircle } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 
 interface LoadingModalProps {
   text: string
@@ -8,7 +8,10 @@ interface LoadingModalProps {
 }
 
 export default function LoadingModal({ text, phase, onClose, progress }: LoadingModalProps) {
-  const finished = [3, 4].includes(phase);
+  const success = phase === 3;
+  const error = phase === 4;
+  const finished = success || error;
+  
   if (phase === 0) return null
 
   return (
@@ -17,8 +20,10 @@ export default function LoadingModal({ text, phase, onClose, progress }: Loading
       <div className="relative bg-[#1E1E1E] p-6 rounded-lg shadow-lg flex flex-col items-center">
         {!finished ? (
           <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
-        ) : (
+        ) : success ? (
           <CheckCircle className="w-12 h-12 text-emerald-500 animate-bounce" />
+        ) : (
+          <XCircle className="w-12 h-12 text-red-500 animate-bounce" />
         )}
 
         <p className={`text-white text-lg mt-4 mb-2 ${!finished ? 'dots' : ''}`}>
@@ -42,7 +47,7 @@ export default function LoadingModal({ text, phase, onClose, progress }: Loading
             {/* Percentage Indicator Inside */}
             <span
               className="absolute inset-0 flex justify-center items-center text-sm font-semibold transition-colors"
-              style={{ color: "#FFFFFF" }} 
+              style={{ color: "#FFFFFF" }}
             >
               {progress}%
             </span>

@@ -66,8 +66,6 @@ export default function App() {
   useEffect(() => {
     const unlisten = listen("progress", event => {
       const logLine = event.payload as string;
-      console.log(logLine);
-
       // If this line indicates a new video is starting:
       const itemInfo = parseDownloadingItem(logLine);
       if (itemInfo) {
@@ -102,6 +100,7 @@ export default function App() {
 
     if (!validUrlRegex.test(formState.url)) {
       alert("Invalid URL! Please enter a valid URL starting with http:// or https://");
+      dispatchLoading({ name: 'phase', value: 0 });
       return;
     }
 
@@ -112,6 +111,7 @@ export default function App() {
 
       if (type === "none") {
         alert("No video or playlist found! Please check the URL and try again.");
+        dispatchLoading({ name: 'phase', value: 0 });
         return;
       } else if (type === "playlist") {
         playlistFolder = await invoke("setup_playlist_folder", { title: playlistTitle });
@@ -130,6 +130,7 @@ export default function App() {
       dispatchLoading({ name: 'phase', value: 4 - (success ? 1 : 0) });
     } catch (error) {
       console.error(error);
+      dispatchLoading({ name: 'phase', value: 4 });
     }
   }
 

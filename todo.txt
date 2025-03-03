@@ -1,6 +1,14 @@
 - error message display
 - locale and detect, also bar up
-- create update logic to check for releases on github and popup if so to reinstall
 - how to button representing 2/3 slides with photo and explanation
+- check youtube mixes
+
+- npx tauri signer generate; then in tauri config json:
+"updater": {
+  "active": true,
+  "pubkey": "YOUR_PUBLIC_KEY_HERE"
+} and store private key in GitHub secrets: settings -> secrets and variables -> actions -> new repo secret, name it TAURI_PRIVATE_KEY and finally update workflow for aaction
+- name: Sign update artifacts
+  run: npx tauri signer sign --secret-key "${{ secrets.TAURI_PRIVATE_KEY }}" --files "src-tauri/target/**/SnatchVid*.tar.gz"
 
 BUILD AND RELEASE
