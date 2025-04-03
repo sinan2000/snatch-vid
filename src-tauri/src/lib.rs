@@ -1,14 +1,14 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{env, fs};
 use std::io::{BufRead, BufReader};
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::{env, fs};
 use tauri::command;
 use tauri::Emitter;
 use tokio::task;
-use std::os::windows::process::CommandExt;
 
 // Struct for storing the file path
 #[derive(Serialize, Deserialize, Debug)]
@@ -120,7 +120,11 @@ async fn detect_url_type(url: String) -> (String, String) {
         if parsed.get("_type").map_or(false, |t| t == "playlist") {
             if let Some(entries) = parsed.get("entries").and_then(|e| e.as_array()) {
                 if !entries.is_empty() {
-                    let title = parsed.get("title").and_then(|t| t.as_str()).unwrap_or("none").to_string();
+                    let title = parsed
+                        .get("title")
+                        .and_then(|t| t.as_str())
+                        .unwrap_or("none")
+                        .to_string();
                     return Some(("playlist".to_string(), title));
                 }
             }
@@ -190,7 +194,7 @@ fn generate_args(
     match format {
         "mp4" => {
             args.push(format!(
-                "-f bestvideo[height={}]+bestaudio[ext=m4a]/best",
+                "-f bestvideo[height<={0}]+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
                 quality
             ));
             args.push("--merge-output-format".to_string());
@@ -198,7 +202,7 @@ fn generate_args(
         }
         "webm" => {
             args.push(format!(
-                "-f bestvideo[height={}][ext=webm]+bestaudio[ext=webm]/best",
+                "-f bestvideo[height<={0}][ext=webm]+bestaudio[ext=webm]/bestvideo+bestaudio/best",
                 quality
             ));
             args.push("--merge-output-format".to_string());
@@ -231,7 +235,6 @@ fn generate_args(
         args.push("--yes-playlist".to_string());
     }
 
-    // naming - title.extension
     args.push("-o".to_string());
     args.push("%(title)s.%(ext)s".to_string());
 
@@ -253,9 +256,10 @@ async fn start_download(
     let (yt_dlp_path, ffmpeg_path) = get_binary_paths();
 
     let download_path = match read_config() {
-        Some(path) => PathBuf::from(path),
+        Some(path) => {
+            PathBuf::from(path)
+        }
         None => {
-            eprintln!("Download path not found in config.");
             return false;
         }
     };
@@ -267,7 +271,6 @@ async fn start_download(
     };
 
     let path_str = final_download_path.to_string_lossy().to_string();
-
     let args = generate_args(&format, &quality, &download_type, &ffmpeg_path, &path_str);
 
     let result = task::spawn_blocking(move || download_process(&yt_dlp_path, &url, args, window))
@@ -276,46 +279,32 @@ async fn start_download(
 
     result
 }
-
 fn download_process(
     yt_dlp_path: &str,
     url: &str,
     args: Vec<String>,
     window: tauri::Window,
 ) -> bool {
-    // On Windows, set the flag to not create a window.
+
     #[cfg(windows)]
     let mut child = {
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        Command::new(env::current_dir().unwrap().join(yt_dlp_path))
+        match Command::new(env::current_dir().unwrap().join(yt_dlp_path))
             .arg(url)
             .args(&args)
             .creation_flags(CREATE_NO_WINDOW)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .unwrap_or_else(|e| {
-                eprintln!("Failed to spawn process: {}", e);
-                panic!();
-            })
+        {
+            Ok(child) => child,
+            Err(e) => {
+                return false;
+            }
+        }
     };
 
-    // For non-Windows systems, spawn normally.
-    #[cfg(not(windows))]
-    let mut child = {
-        Command::new(yt_dlp_path)
-            .arg(url)
-            .args(&args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap_or_else(|e| {
-                eprintln!("Failed to spawn process: {}", e);
-                panic!();
-            })
-    };
-
-    // Take stdout and stderr and spawn threads to read them.
+    // stderr/stdout handlers
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
 
@@ -344,9 +333,10 @@ fn download_process(
     });
 
     let status = match child.wait() {
-        Ok(status) => status,
+        Ok(status) => {
+            status
+        }
         Err(e) => {
-            eprintln!("Failed to wait for yt-dlp process: {}", e);
             return false;
         }
     };

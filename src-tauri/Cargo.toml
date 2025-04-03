@@ -1,6 +1,6 @@
 [package]
 name = "snatchvid"
-version = "1.0.2"
+version = "1.0.3"
 description = "A video downloader app"
 authors = ["SNS Automation"]
 edition = "2021"
