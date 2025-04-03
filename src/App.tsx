@@ -191,7 +191,7 @@ export default function App() {
           placeholder="Enter URL..."
           name="url"
           value={formState.url}
-          onChange={(e) => dispatchForm(e.target)}
+          onChange={(e) => dispatchForm({ name: "url", value: e.target.value })}
           className="w-full p-2 mt-2 border border-gray-600 rounded"
         />
 
